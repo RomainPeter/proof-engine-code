@@ -7,7 +7,7 @@ def add(a: int, b: int) -> int:
     return a + b
 
 
-def subtract(a: int, b: int) -> int:
+def subtract(a: int, b: int, c: int = 0) -> int:
     """Subtracts two integers."""
     return a - b
 
