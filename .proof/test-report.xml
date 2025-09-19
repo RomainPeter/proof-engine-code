@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.216" timestamp="2025-09-19T14:57:30.429573+02:00" hostname="Mastermind"><testcase classname="examples.pilot-python.tests.test_api" name="test_add" time="0.003"><failure message="assert 6 == 5&#10; +  where 6 = add(2, 3)">def test_add():
+&gt;       assert add(2, 3) == 5
+E       assert 6 == 5
+E        +  where 6 = add(2, 3)
+
+examples\pilot-python\tests\test_api.py:5: AssertionError</failure></testcase><testcase classname="examples.pilot-python.tests.test_api" name="test_subtract" time="0.001" /></testsuite></testsuites>

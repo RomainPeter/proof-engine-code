@@ -1,0 +1,21 @@
+{
+  "name": "Proof Engine for Code – Pilot",
+  "policy": {
+    "versioning": "semver",
+    "merge_blocking_severity": ["critical", "high"]
+  },
+  "targets": {
+    "coverage_diff_min": 0.9,
+    "lint_zero_warnings": true,
+    "type_check_mode": "strict",
+    "no_secrets": true
+  },
+  "critical_paths": [
+    {"pattern": "src/core/**", "extra_obligations": ["O-CODE-PROP-1", "O-CODE-PERF-1"]},
+    {"pattern": "src/security/**", "extra_obligations": ["O-CODE-SAST-1"]}
+  ],
+  "evidence": {
+    "sbom_format": "cyclonedx",
+    "journal": {"merkle": true, "append_only": true}
+  }
+}

@@ -1,0 +1,8 @@
+- id: I-CODE-MONOTONICITY-1
+  statement: Une PR ne peut réduire la couverture ou supprimer une preuve sans dérogation signée.
+- id: I-CODE-APPEND-1
+  statement: Le journal .proof/ est append-only, scellé par Merkle, corrélé au SHA du commit.
+- id: I-CODE-REPRO-1
+  statement: Build et tests doivent être reproductibles localement et en CI pour un même arbre de sources.
+- id: I-CODE-TRACE-1
+  statement: Chaque preuve enregistre source, horodatage, version d’outil et hash.
