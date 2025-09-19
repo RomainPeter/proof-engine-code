@@ -49,32 +49,29 @@ def run_verifiers(obligations_to_run, all_obligations, all_verifiers):
     print(f"\n--- Running {len(obligations_to_run)} verifiers ---")
     obligation_map = {ob['id']: ob for ob in all_obligations}
 
-    # Prepare environment
-    my_env = os.environ.copy()
-    python_dir = os.path.dirname(sys.executable)
-    scripts_dir = os.path.join(python_dir, 'Scripts')
-    my_env['PATH'] = f"{scripts_dir}{os.pathsep}{my_env.get('PATH', '')}"
-    example_path = os.path.abspath('examples/pilot-python')
-    my_env['PYTHONPATH'] = f"{example_path}{os.pathsep}{my_env.get('PYTHONPATH', '')}"
-
     for ob_id in obligations_to_run:
         if ob_id not in obligation_map:
             continue
-        verifier_id = obligation_map[ob_id]['verifier']
-        if verifier_id not in all_verifiers:
+        verifier_id = obligation_map[ob_id].get('verifier')
+        if not verifier_id or verifier_id not in all_verifiers:
             continue
 
-        command = all_verifiers[verifier_id]['cmd']
-        command = command.replace("{PYTHON_SCRIPTS_PATH}", scripts_dir)
+        verifier_entry = all_verifiers[verifier_id]
+        command = verifier_entry["cmd"].format(python=sys.executable)
+
+        env = os.environ.copy()
+        if "env" in verifier_entry:
+            env.update(verifier_entry["env"])
 
         print(f"\n[RUN] Obligation: {ob_id} | Verifier: {verifier_id}")
         print(f"$ {command}")
 
         try:
             result = subprocess.run(
-                command, shell=True, check=True, capture_output=True, env=my_env
+                command, shell=True, check=True, capture_output=True, env=env
             )
             sys.stdout.buffer.write(result.stdout)
+            sys.stderr.buffer.write(result.stderr)
             print(f"\n[PASS] {ob_id}")
         except subprocess.CalledProcessError as e:
             sys.stdout.buffer.write(e.stdout)

@@ -1,20 +1,34 @@
-build_repro:
-  cmd: "python -m pip install --no-deps --require-hashes -r spec_pack/requirements.lock.txt"
 tests_coverage_targeted:
-  cmd: "pytest -q --cov=src --cov-report=xml --junitxml=.proof/test-report.xml"
+  cmd: "{python} -m pytest -q examples/pilot-python/tests --maxfail=1 --disable-warnings --cov=examples/pilot-python/src --cov-report=xml:.proof/coverage.xml --junitxml=.proof/test-report.xml"
+  env:
+    PYTHONPATH: "examples/pilot-python"
+
 typecheck_dmypy:
-  cmd: "dmypy run -- examples/pilot-python/src --follow-imports=skip --ignore-missing-imports --allow-redefinition"
+  cmd: "dmypy run -- examples/pilot-python/src --follow-imports=silent --ignore-missing-imports --allow-redefinition"
+  env:
+    PYTHONPATH: "examples/pilot-python"
+    MYPY_CACHE_DIR: ".mypy_cache"
+
 linter:
-  cmd: "ruff check src --output-format json --output-file .proof/ruff.json --exit-zero"
+  cmd: "ruff check examples/pilot-python/src --output-format json --output-file .proof/ruff.json --exit-zero"
+
 sast_semgrep:
-  cmd: "semgrep --config p/ci --error --json -o .proof/sast.json"
+  cmd: "semgrep --config p/ci --error --json -o .proof/sast.json examples/pilot-python/src"
+
 sbom_cyclonedx:
-  cmd: "python -m cyclonedx_py environment -o .proof/sbom.json --output-format json"
+  cmd: "{python} -m cyclonedx_py --format json -o .proof/sbom.json"
+
+build_repro:
+  cmd: "{python} -m pip install --no-deps --require-hashes -r spec_pack/requirements.lock.txt"
+
 api_diff:
-  cmd: "python spec_pack.code/tools/a2c_code.py --check-api-diff"
+  cmd: "{python} spec_pack.code/tools/a2c_code.py --check-api-diff"
+
 api_semver:
-  cmd: "python spec_pack.code/tools/check_semver.py --check-version"
+  cmd: "{python} spec_pack.code/tools/check_semver.py --check-version"
+
 api_changelog:
-  cmd: "python spec_pack.code/tools/check_semver.py --check-changelog"
+  cmd: "{python} spec_pack.code/tools/check_semver.py --check-changelog"
+
 journal_merkle:
-  cmd: "python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json"
+  cmd: "{python} spec_pack/tools/merkle_hasher.py .proof --out .proof/merkle.json"
