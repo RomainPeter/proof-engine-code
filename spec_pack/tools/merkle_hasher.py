@@ -1,76 +1,44 @@
-#!/usr/bin/env python
 import argparse
 import json
 import hashlib
 import os
 import sys
 
-
-def load_ndjson(path):
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
-
-
-def write_ndjson(path, items):
-    with open(path, "w", encoding="utf-8") as f:
-        for o in items:
-            f.write(json.dumps(o, separators=((",", ":"))) + "\n")
-
-
-def merkle_root(hex_hashes):
-    layer = [bytes.fromhex(h) for h in hex_hashes]
-    if not layer:
-        return ""
-    while len(layer) > 1:
-        if len(layer) % 2 == 1:
-            layer.append(layer[-1])
-        layer = [
-            hashlib.sha256(layer[i] + layer[i + 1]).digest()
-            for i in range(0, len(layer), 2)
-        ]
-    return layer[0].hex()
-
-
-def recompute_chain(items):
-    prev = None
-    hex_hashes = []
-    for o in items:
-        core = {
-            k: o[k] for k in o if k not in ["hash", "parent_hash", "merkle_root_day"]
-        }
-        s = json.dumps(core, separators=((",", ":"))).encode()
-        h = hashlib.sha256(s + (bytes.fromhex(prev) if prev else b"")).hexdigest()
-        o["parent_hash"] = prev
-        o["hash"] = h
-        hex_hashes.append(h)
-        prev = h
-    root = merkle_root(hex_hashes)
-    for o in items:
-        o["merkle_root_day"] = root
-    return items
-
+def hash_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(8192)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="inp", required=True)
-    ap.add_argument("--out", dest="out", required=True)
-    args = ap.parse_args()
-    items = load_ndjson(args.inp)
-    items = recompute_chain(items)
-    write_ndjson(args.out, items)
-    print(
-        json.dumps(
-            {
-                "entries": len(items),
-                "merkle_root_day": items[-1]["merkle_root_day"] if items else "",
-            },
-            indent=2,
-        )
-    )
-    return 0
+    parser = argparse.ArgumentParser(description="Merkle Hasher for Proof Artifacts")
+    parser.add_argument("--in", dest="inp", required=True, help="Input directory containing proof artifacts.")
+    parser.add_argument("--out", required=True, help="Output file for the Merkle root JSON.")
+    args = parser.parse_args()
 
+    if not os.path.isdir(args.inp):
+        print(f"Error: Input path {args.inp} is not a directory.", file=sys.stderr)
+        sys.exit(1)
+
+    hashes = []
+    for root, _, files in os.walk(args.inp):
+        for filename in sorted(files):
+            if filename == os.path.basename(args.out): # Don't hash the output file itself
+                continue
+            path = os.path.join(root, filename)
+            hashes.append(hash_file(path))
+    
+    # Simple Merkle root: hash of sorted concatenated hashes
+    merkle_root = hashlib.sha256("".join(sorted(hashes)).encode()).hexdigest()
+
+    with open(args.out, "w") as f:
+        json.dump({"merkle_root": merkle_root, "files_hashed": len(hashes)}, f, indent=2)
+
+    print(f"Merkle root calculated and saved to {args.out}")
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
