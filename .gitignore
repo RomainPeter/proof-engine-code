@@ -2,12 +2,23 @@
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
 # OS/IDE
 .DS_Store
 .vscode/
+
 # Project
 artifacts/
 *.zip
 *.sha256
 spec_pack/compiled/
 spec_pack/samples/*.tmp
+
+# Proof & Coverage Artifacts
+.proof/
+.coverage
+coverage.xml

@@ -1,15 +1,15 @@
 build_repro:
-  cmd: "pip install --no-deps --require-hashes -r spec_pack/requirements.lock.txt"
+  cmd: "python -m pip install --no-deps --require-hashes -r spec_pack/requirements.lock.txt"
 tests_coverage_targeted:
   cmd: "pytest -q --cov=src --cov-report=xml --junitxml=.proof/test-report.xml"
 typecheck_dmypy:
-  cmd: "dmypy run -- --follow-imports=silent --ignore-missing-imports --allow-redefinition"
+  cmd: "dmypy run -- examples/pilot-python/src --follow-imports=skip --ignore-missing-imports --allow-redefinition"
 linter:
   cmd: "ruff check src --output-format json --output-file .proof/ruff.json --exit-zero"
 sast_semgrep:
-  cmd: "semgrep --config p/ci --error --json -o .proof/sast.json || true"
+  cmd: "semgrep --config p/ci --error --json -o .proof/sast.json"
 sbom_cyclonedx:
-  cmd: "cyclonedx-py --format json -o .proof/sbom.json || true"
+  cmd: "python -m cyclonedx_py environment -o .proof/sbom.json --output-format json"
 api_diff:
   cmd: "python spec_pack.code/tools/a2c_code.py --check-api-diff"
 api_semver:
@@ -17,4 +17,4 @@ api_semver:
 api_changelog:
   cmd: "python spec_pack.code/tools/check_semver.py --check-changelog"
 journal_merkle:
-  cmd: "python spec_pack/tools/merkle_hasher.py .proof --out .proof/merkle.json"
+  cmd: "python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json"
