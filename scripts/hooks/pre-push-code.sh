@@ -11,7 +11,7 @@ fi
 echo "Running S1-quick pre-push checks..."
 
 # Run targeted tests and other checks
-python spec_pack.code/tools/a2c_code.py --level S1-quick --diff $(git rev-parse HEAD)
+python spec_pack.code/tools/a2c_code.py --diff $(git rev-parse HEAD)
 
 if [ $? -ne 0 ]; then
     echo "S1-quick pre-push checks failed."

@@ -12,7 +12,7 @@ Write-Host "Running S1-quick pre-push checks..."
 
 # Run targeted tests and other checks
 $head = git rev-parse HEAD
-python spec_pack.code/tools/a2c_code.py --level S1-quick --diff $head
+python spec_pack.code/tools/a2c_code.py --diff $head
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "S1-quick pre-push checks failed."
