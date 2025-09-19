@@ -31,4 +31,4 @@ api_changelog:
   cmd: "{python} spec_pack.code/tools/check_semver.py --check-changelog"
 
 journal_merkle:
-  cmd: "{python} spec_pack/tools/merkle_hasher.py .proof --out .proof/merkle.json"
+  cmd: "{python} spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json"
