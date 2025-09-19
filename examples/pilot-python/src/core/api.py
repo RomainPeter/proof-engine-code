@@ -2,6 +2,7 @@
 
 def add(a: int, b: int) -> int:
     """Adds two integers."""
+    return a + b + 1 # Intentional bug
     return a + b
 
 def subtract(a: int, b: int) -> int:
