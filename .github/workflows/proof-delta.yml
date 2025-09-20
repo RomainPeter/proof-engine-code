@@ -148,6 +148,7 @@ jobs:
       
       - name: Comment PR with Proof Delta Report
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
             const fs = require('fs');
@@ -160,38 +161,60 @@ jobs:
               reportContent = '## Proof Delta Report\n\n⚠️ Report generation failed.';
             }
             
-            // Find existing comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const botComment = comments.data.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('Proof Delta Report')
-            );
-            
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: reportContent
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
+            try {
+              // Check if this is a fork PR (limited permissions)
+              const isFork = context.payload.pull_request.head.repo.full_name !== context.payload.pull_request.base.repo.full_name;
+              
+              if (isFork) {
+                console.log('⚠️ PR is from a fork. GitHub restricts token permissions for security.');
+                console.log('📋 Proof Delta Report generated but cannot comment automatically.');
+                console.log('📄 Report content:');
+                console.log(reportContent);
+                return;
+              }
+              
+              // Find existing comment
+              const comments = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: reportContent
               });
+              
+              const botComment = comments.data.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('Proof Delta Report')
+              );
+              
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: reportContent
+                });
+                console.log('✅ Updated existing Proof Delta comment');
+              } else {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: reportContent
+                });
+                console.log('✅ Created new Proof Delta comment');
+              }
+            } catch (error) {
+              console.log('⚠️ Failed to comment on PR:', error.message);
+              console.log('📋 This may be due to insufficient permissions or fork restrictions.');
+              console.log('📄 Report content:');
+              console.log(reportContent);
+              // Don't fail the workflow, just log the issue
             }
       
       - name: Set PR Status
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
             // Set PR status based on proof analysis results
