@@ -21,4 +21,4 @@ spec_pack/samples/*.tmp
 # Proof & Coverage Artifacts
 .proof/
 .coverage
-coverage.xml
+coverage.xml.proof/cache/
