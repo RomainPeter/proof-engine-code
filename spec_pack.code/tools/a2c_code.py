@@ -1,6 +1,4 @@
 import argparse
-import os
-import subprocess
 import sys
 
 import yaml
@@ -45,6 +43,19 @@ def get_diff_details(repo_path, commit_ref):
     return details
 
 
+def _run_cmd(entry):
+    import os
+    import subprocess
+    import sys
+    cmd = entry["cmd"].format(python=sys.executable)
+    env = os.environ.copy()
+    for k, v in (entry.get("env") or {}).items():
+        env[k] = v
+    print(f"-> {cmd}")
+    res = subprocess.run(cmd, shell=True, env=env)
+    return res.returncode
+
+
 def run_verifiers(obligations_to_run, all_obligations, all_verifiers):
     print(f"\n--- Running {len(obligations_to_run)} verifiers ---")
     obligation_map = {ob['id']: ob for ob in all_obligations}
@@ -57,25 +68,12 @@ def run_verifiers(obligations_to_run, all_obligations, all_verifiers):
             continue
 
         verifier_entry = all_verifiers[verifier_id]
-        command = verifier_entry["cmd"].format(python=sys.executable)
-
-        env = os.environ.copy()
-        if "env" in verifier_entry:
-            env.update(verifier_entry["env"])
-
         print(f"\n[RUN] Obligation: {ob_id} | Verifier: {verifier_id}")
-        print(f"$ {command}")
+        return_code = _run_cmd(verifier_entry)
 
-        try:
-            result = subprocess.run(
-                command, shell=True, check=True, capture_output=True, env=env
-            )
-            sys.stdout.buffer.write(result.stdout)
-            sys.stderr.buffer.write(result.stderr)
+        if return_code == 0:
             print(f"\n[PASS] {ob_id}")
-        except subprocess.CalledProcessError as e:
-            sys.stdout.buffer.write(e.stdout)
-            sys.stderr.buffer.write(e.stderr)
+        else:
             print(f"[FAIL] {ob_id}")
             return False
     return True

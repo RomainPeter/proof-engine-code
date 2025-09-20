@@ -1,12 +1,23 @@
-#!/usr/bin/env python3
+import os
 import subprocess
 import sys
 
-cmd = [sys.executable, "spec_pack/tools/verify.py", "--s1"]
-print("Running S1 audit checks (minimality, trace bound, provenance)...")
-p = subprocess.run(cmd, capture_output=True, text=True)
-print(p.stdout)
-if p.returncode != 0:
-    print(p.stderr, file=sys.stderr)
-    sys.exit(1)
-print("S1 suite (subset) PASS")
+
+def main():
+    journal = os.environ.get("PROOF_JOURNAL", ".proof/journal.ndjson")
+    merkle = os.environ.get("PROOF_MERKLE", ".proof/merkle.json")
+    cmd = [
+        sys.executable,
+        "spec_pack/tools/verify.py",
+        "--journal",
+        journal,
+        "--merkle-root-file",
+        merkle,
+    ]
+    print("Running S1 audit checks (journal + merkle verify)…")
+    rc = subprocess.run(cmd, check=False).returncode
+    sys.exit(rc)
+
+
+if __name__ == "__main__":
+    main()

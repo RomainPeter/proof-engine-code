@@ -31,8 +31,8 @@ jobs:
       - name: A2H check
         run: python3 spec_pack/tools/a2h_compile.py --check
 
-      - name: S1
-        run: python3 spec_pack/tools/run_s1.py
+      - name: Run S1 audit checks
+        run: python spec_pack/tools/run_s1.py
 
       - name: S2 inject
         run: python3 spec_pack/tools/s2_contradiction.py
