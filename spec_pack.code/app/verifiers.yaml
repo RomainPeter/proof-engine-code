@@ -16,7 +16,7 @@ sast_semgrep:
   cmd: "semgrep --config p/ci --error --json -o .proof/sast.json examples/pilot-python/src"
 
 sbom_cyclonedx:
-  cmd: "{python} -m cyclonedx_py requirements -i spec_pack/requirements.lock.txt -o .proof/sbom.json --format json"
+  cmd: "{python} -m cyclonedx_py requirements -i spec_pack/requirements.lock.txt -o .proof/sbom.json --of JSON"
 
 build_repro:
   cmd: "{python} -m pip install --no-deps --require-hashes -r spec_pack/requirements.lock.txt"
