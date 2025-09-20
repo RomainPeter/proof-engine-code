@@ -1,0 +1,34 @@
+tests_coverage_targeted:
+  cmd: "{python} -m pytest -q examples/pilot-python/tests --maxfail=1 --disable-warnings --cov=examples/pilot-python/src --cov-report=xml:.proof/coverage.xml --junitxml=.proof/test-report.xml"
+  env:
+    PYTHONPATH: "examples/pilot-python"
+
+typecheck_dmypy:
+  cmd: "dmypy run -- examples/pilot-python/src --ignore-missing-imports --allow-redefinition"
+  env:
+    PYTHONPATH: "examples/pilot-python"
+    MYPY_CACHE_DIR: ".mypy_cache"
+
+linter:
+  cmd: "ruff check examples/pilot-python/src --output-format json --output-file .proof/ruff.json --exit-zero"
+
+sast_semgrep:
+  cmd: "semgrep --config p/ci --error --json -o .proof/sast.json examples/pilot-python/src"
+
+sbom_cyclonedx:
+  cmd: "{python} -m cyclonedx_py requirements -i spec_pack/requirements.lock.txt -o .proof/sbom.json --of JSON"
+
+build_repro:
+  cmd: "{python} -m pip install --no-deps --require-hashes -r spec_pack/requirements.lock.txt"
+
+api_diff:
+  cmd: "{python} spec_pack.code/tools/a2c_code.py --check-api-diff"
+
+api_semver:
+  cmd: "{python} spec_pack.code/tools/check_semver.py --check-version"
+
+api_changelog:
+  cmd: "{python} spec_pack.code/tools/check_semver.py --check-changelog"
+
+journal_merkle:
+  cmd: "{python} spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json"
