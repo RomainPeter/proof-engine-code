@@ -1,12 +1,12 @@
 tests_coverage_targeted:
   cmd: "{python} -m pytest -q examples/pilot-python/tests --maxfail=1 --disable-warnings --cov=examples/pilot-python/src --cov-report=xml:.proof/coverage.xml --junitxml=.proof/test-report.xml"
   env:
-    PYTHONPATH: "examples/pilot-python"
+    PYTHONPATH: "examples/pilot-python/src"
 
 typecheck_dmypy:
   cmd: "dmypy run -- examples/pilot-python/src --ignore-missing-imports --allow-redefinition"
   env:
-    PYTHONPATH: "examples/pilot-python"
+    PYTHONPATH: "examples/pilot-python/src"
     MYPY_CACHE_DIR: ".mypy_cache"
 
 linter:
