@@ -4,7 +4,7 @@ tests_coverage_targeted:
     PYTHONPATH: "examples/pilot-python"
 
 typecheck_dmypy:
-  cmd: "dmypy run -- examples/pilot-python/src --follow-imports=silent --ignore-missing-imports --allow-redefinition"
+  cmd: "dmypy run -- examples/pilot-python/src --ignore-missing-imports --allow-redefinition"
   env:
     PYTHONPATH: "examples/pilot-python"
     MYPY_CACHE_DIR: ".mypy_cache"
