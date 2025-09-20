@@ -76,13 +76,13 @@ jobs:
         run: |
           echo "Running S2 verifiers..."
           semgrep --config p/ci --error --json -o .proof/sast.json || true
-          cyclonedx-py --format json -o .proof/sbom.json || true
+          python -m cyclonedx_py requirements spec_pack/requirements.lock.txt --output-file .proof/sbom.json || true
 
       - name: Assemble Proof Journal
         run: |
           # This is a placeholder for the real journal assembly
           echo '{"evidence": "test_report.xml", "verifier": "pytest"}' > .proof/journal.ndjson
-          python spec_pack/tools/merkle_hasher.py .proof --out .proof/merkle.json
+          python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json
 
       - name: Upload Proof Artifacts
         uses: actions/upload-artifact@v4
