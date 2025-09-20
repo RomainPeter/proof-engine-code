@@ -69,7 +69,7 @@ jobs:
           echo "Running S1 verifiers..."
           python -m pytest --cov=examples/pilot-python/src --cov-report=xml --junitxml=.proof/test-report.xml || echo "Tests failed"
           dmypy run -- examples/pilot-python/src/
-          ruff check examples/pilot-python/src --exit-zero --output-file .proof/ruff.json --format json
+          ruff check examples/pilot-python/src --exit-zero --output-file .proof/ruff.json
 
       - name: S2 - Security and Dependency Scans
         if: success() # Or based on a2c_code.py output
