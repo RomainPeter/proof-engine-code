@@ -14,3 +14,5 @@ semgrep>=1.76.0
 toml>=0.10.2
 cyclonedx-bom
 tqdm>=4.66.1
+# Windows-specific dependencies
+pywin32>=311; platform_system == "Windows"
