@@ -17,5 +17,3 @@ What’s inside
 - spec_pack/: ANF, obligations/invariants, tests S1/S2, PCAP, journal, metrics, A2H compiler.
 - .github/workflows/: Proof CI.
 
-License
-Apache-2.0
