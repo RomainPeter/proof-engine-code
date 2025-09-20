@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import json
-import time
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 EVIDENCE = "spec_pack/samples/evidence.jsonl"
@@ -116,7 +116,10 @@ retro_rules:
   - id: RR-0001
     created_at: "{now_iso()}"
     trigger: "attribute_conflict: {CONFLICT_ATTR} vs {ANTAGONIST_ATTR}"
-    statement: "If conflicting policy detected on {CONFLICT_ATTR}, quarantine affected evidence and mark dependent decisions as contested; enforce deny-with-proof for requests requiring {CONFLICT_ATTR} until resolution."
+    statement: >
+      If conflicting policy detected on {CONFLICT_ATTR}, quarantine affected
+      evidence and mark dependent decisions as contested; enforce deny-with-proof
+      for requests requiring {CONFLICT_ATTR} until resolution.
     action:
       - quarantine: "{CONFLICT_ATTR}"
       - mark_decisions: "contested"
@@ -171,7 +174,15 @@ retro_rules:
     # 5) Recompute merkle chain on the journal
     if os.path.exists(MERKLE):
         subprocess.run(
-            [sys.executable, MERKLE, "--in", JOURNAL, "--out", JOURNAL], check=True
+            [
+                sys.executable,
+                MERKLE,
+                "--in",
+                os.path.dirname(JOURNAL),
+                "--out",
+                JOURNAL,
+            ],
+            check=True,
         )
     else:
         print("WARN: merkle_hasher.py not found; journal not rehashed", file=sys.stderr)
