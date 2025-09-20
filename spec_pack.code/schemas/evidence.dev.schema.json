@@ -1,0 +1,15 @@
+{
+    "definitions": {
+        "test_report": {"type": "string", "description": "Path to pytest JUnit XML report"},
+        "coverage_diff": {"type": "string", "description": "Path to coverage.xml diff report"},
+        "typecheck_report": {"type": "string", "description": "Path to mypy/pyright JSON/text report"},
+        "lint_report": {"type": "string", "description": "Path to ruff JSON report"},
+        "sast_report": {"type": "string", "description": "Path to semgrep JSON report"},
+        "sbom": {"type": "string", "description": "Path to CycloneDX JSON SBOM"},
+        "api_diff": {"type": "object", "description": "JSON object detailing public API changes"},
+        "version_bump": {"type": "string", "description": "New version string"},
+        "changelog_entry": {"type": "string", "description": "Entry in CHANGELOG.md"},
+        "proof_journal": {"type": "string", "description": "Path to journal.ndjson"},
+        "merkle_root": {"type": "string", "description": "Merkle root of the proof journal"}
+    }
+}
