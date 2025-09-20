@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   proof-delta:
     runs-on: ubuntu-latest
@@ -42,7 +46,7 @@ jobs:
           
           # Run linting
           echo "Running linting..."
-          ruff check examples/pilot-python/src --output-format json --output-file .proof/ruff.json --exit-zero || echo "Linting completed with issues"
+          ruff check examples/pilot-python/src --output-file .proof/ruff.json --exit-zero || echo "Linting completed with issues"
           
           # Run security scan
           echo "Running security scan..."
