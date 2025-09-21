@@ -1,0 +1,71 @@
+- id: O-CODE-BUILD-1
+  title: Build reproductible
+  severity: high
+  evidence: [sbom, lockfile, build_env_hash]
+  verifier: build_repro
+  when: "diff_class in ['deps']"
+
+- id: O-CODE-TEST-1
+  title: Tests verts et couverture delta ≥ seuil
+  severity: high
+  params: {coverage_diff_min_ref: $.targets.coverage_diff_min}
+  evidence: [test_report, coverage_diff]
+  verifier: tests_coverage_targeted
+  when: "diff_class in ['behavior', 'interface']"
+
+- id: O-CODE-TYPE-1
+  title: Type-check strict
+  severity: high
+  evidence: [typecheck_report]
+  verifier: typecheck_dmypy
+  when: "diff_class in ['behavior', 'interface']"
+
+- id: O-CODE-LINT-1
+  title: Lint zéro avertissement
+  severity: medium
+  params: {zero_warnings: $.targets.lint_zero_warnings}
+  evidence: [lint_report]
+  verifier: linter
+  when: "diff_class in ['trivial', 'behavior', 'interface']"
+
+- id: O-CODE-SAST-1
+  title: Pas de nouvelles vulnérabilités High
+  severity: high
+  evidence: [sast_report]
+  verifier: sast_semgrep
+  when: "diff_class in ['deps', 'interface'] or diff_touches_security"
+
+- id: O-CODE-SBOM-1
+  title: SBOM à jour
+  severity: medium
+  evidence: [sbom]
+  verifier: sbom_cyclonedx
+  when: "diff_class in ['deps']"
+
+- id: O-CODE-API-DIFF-1
+  title: Différence API publique détectée
+  severity: high
+  evidence: [api_diff]
+  verifier: api_diff
+  when: "diff_class in ['interface']"
+
+- id: O-CODE-API-SEMVER-1
+  title: Version SemVer cohérente avec le diff API
+  severity: high
+  evidence: [version_bump]
+  verifier: api_semver
+  when: "diff_class in ['interface']"
+
+- id: O-CODE-API-CHANGELOG-1
+  title: Entrée CHANGELOG pour la nouvelle version
+  severity: high
+  evidence: [changelog_entry]
+  verifier: api_changelog
+  when: "diff_class in ['interface']"
+
+- id: O-CODE-TRACE-1
+  title: Journal de preuves merklisé
+  severity: high
+  evidence: [proof_journal, merkle_root]
+  verifier: journal_merkle
+  when: "always"
