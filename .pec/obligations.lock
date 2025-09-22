@@ -21,7 +21,7 @@
   {
     "id": "OBL-COVERAGE-THRESHOLD",
     "severity": "error",
-    "threshold": 80,
+    "threshold": 85,
     "suites": [
       "unit"
     ]
