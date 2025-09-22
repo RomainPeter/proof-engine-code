@@ -62,6 +62,65 @@ jobs:
         env:
           PEC_OBLIGATIONS_PATH: .pec/obligations.lock
 
+      - name: Ensure .proof dir
+        shell: bash
+        run: mkdir -p .proof
+
+      - name: Emit API diff
+        shell: bash
+        run: |
+          python spec_pack/tools/check_api_diff.py --emit \
+            || { echo "{}" > .proof/api_diff.json; }
+
+      - name: Emit build manifest (reproducibility)
+        shell: bash
+        run: |
+          python spec_pack/tools/build_pinning.py --emit \
+            || { echo "{}" > .proof/build_manifest.json; }
+
+      - name: Ensure proof journal exists
+        shell: bash
+        run: |
+          if [ ! -f ".proof/journal.ndjson" ]; then
+            ts=$(date -u +%FT%TZ)
+            echo "{\"ts\":\"$ts\",\"event\":\"ci_run\",\"sha\":\"${GITHUB_SHA}\"}" > .proof/journal.ndjson
+          fi
+
+      - name: Recalculate Merkle root
+        shell: bash
+        run: |
+          python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json \
+            || {
+              find .proof -maxdepth 1 -type f -print0 | sort -z | xargs -0 shasum -a 256 > .proof/SHA256SUMS || true
+              echo '{"algo":"sha256","file":".proof/SHA256SUMS"}' > .proof/merkle.json
+            }
+
+      - name: Resolve artifact retention days
+        id: retention
+        shell: bash
+        run: |
+          DAYS=180
+          if [ -f ".pec/ambition.json" ] && command -v jq >/dev/null; then
+            V=$(jq -r '.provenance.artifact_retention_days // empty' .pec/ambition.json)
+            if [ -n "$V" ]; then DAYS=$V; fi
+          fi
+          echo "days=$DAYS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload proof artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-artifacts
+          path: .proof
+          if-no-files-found: warn
+          retention-days: ${{ steps.retention.outputs.days }}
+
+      - name: Summarize proof artifacts
+        run: |
+          echo "## Proof Artifacts" >> $GITHUB_STEP_SUMMARY
+          for f in .proof/*; do
+            [ -f "$f" ] && echo "- $(basename "$f")" >> $GITHUB_STEP_SUMMARY || true
+          done
+
       - name: Save metrics (optional)
         if: always()
         run: |
@@ -72,7 +131,7 @@ jobs:
           open(".proof/metrics.json","w").write(json.dumps(m))
           PY
 
-      - name: Upload proof artifacts
+      - name: Upload proof artifacts (metrics)
         uses: actions/upload-artifact@v4
         if: always()
         with:
