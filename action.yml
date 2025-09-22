@@ -1,0 +1,44 @@
+name: 'Proof Engine for Code — Lite'
+description: 'Minimal obligations + proof journal for code changes (open-core)'
+author: 'RomainPeter'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path to the code to analyze'
+    required: false
+    default: '.'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies (reproducible)
+      shell: bash
+      run: |
+        python -m pip install --require-hashes -r spec_pack/requirements.lock.txt
+
+    - name: Run S1 checks (journal + merkle, minimal obligations)
+      shell: bash
+      run: |
+        python spec_pack/tools/run_s1.py
+
+    - name: Upload proof artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: proof-artifacts
+        path: |
+          .proof/**
+          coverage.xml
+          .proof/*.json
+          .proof/*.ndjson
+        if-no-files-found: warn
+
+
+

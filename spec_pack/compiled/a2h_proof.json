@@ -1,0 +1,68 @@
+{
+  "anf_path": "spec_pack/anf.yaml",
+  "anf_hash_sha256": "663bfa522536677d5fc0dde62cea52b7c0fe7db352793a5cfd45b04678ef86db",
+  "rules_file": "spec_pack/a2h_rules.yaml",
+  "required": {
+    "obligations": [],
+    "invariants": [],
+    "tests": [],
+    "operators": []
+  },
+  "present": {
+    "obligations": [
+      "O-8",
+      "O-11",
+      "O-2",
+      "O-4",
+      "O-12",
+      "O-7",
+      "O-6",
+      "O-10",
+      "O-5",
+      "O-3",
+      "O-1",
+      "O-9"
+    ],
+    "invariants": [
+      "I-6",
+      "I-4",
+      "I-2",
+      "I-3",
+      "I-7",
+      "I-8",
+      "I-1",
+      "I-5"
+    ],
+    "tests": [
+      "H-S3-01",
+      "H-S3-02",
+      "H-S1-01",
+      "H-S1-02",
+      "H-S3-04",
+      "H-S3-05",
+      "H-S1-05",
+      "H-S3-03",
+      "H-S2-02",
+      "H-S2-01",
+      "H-S1-03",
+      "H-S1-04"
+    ],
+    "operators": []
+  },
+  "status": "SAT",
+  "unsat_core": [],
+  "rules_used": [
+    "R-G1",
+    "R-G2",
+    "R-G3",
+    "R-G4",
+    "R-C5",
+    "R-NN1",
+    "R-NN2",
+    "R-TA1",
+    "R-TA2",
+    "R-STD",
+    "R-COST",
+    "R-EXCL"
+  ]
+}

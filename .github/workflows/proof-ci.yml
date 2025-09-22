@@ -1,0 +1,155 @@
+name: Proof Engine CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code_proof:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --require-hashes -r spec_pack/requirements.lock.txt
+
+      - name: Install PEC CLI (no-deps)
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-deps -e .
+          # Runtime deps pour la CLI
+          pip install "jsonschema>=4.20,<5" typer rich
+
+      - name: Compile Ambition (if present)
+        id: compile_ambition
+        shell: bash
+        run: |
+          if [ -f ".pec/ambition.json" ]; then
+            echo "ambition_present=true" >> $GITHUB_OUTPUT
+            pec ambition validate
+            pec ambition compile
+            test -f .pec/obligations.lock || { echo "obligations.lock missing after compile"; exit 1; }
+          else
+            echo "ambition_present=false" >> $GITHUB_OUTPUT
+            echo "No .pec/ambition.json; skipping compile"
+          fi
+
+      - name: Upload Proof Delta
+        if: steps.compile_ambition.outputs.ambition_present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-delta
+          path: .pec/proof_delta.md
+
+      - name: Show Proof Delta in Summary
+        if: steps.compile_ambition.outputs.ambition_present == 'true'
+        run: |
+          echo "## Proof Delta" >> $GITHUB_STEP_SUMMARY
+          cat .pec/proof_delta.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Proof Engine
+        uses: ./
+        env:
+          PEC_OBLIGATIONS_PATH: .pec/obligations.lock
+
+      - name: Install jq (for retention resolution)
+        if: always()
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      - name: Ensure .proof dir
+        if: always()
+        shell: bash
+        run: mkdir -p .proof
+
+      - name: Emit API diff
+        if: always()
+        shell: bash
+        run: |
+          python spec_pack/tools/check_api_diff.py --emit \
+            || { echo "{}" > .proof/api_diff.json; }
+
+      - name: Emit build manifest (reproducibility)
+        if: always()
+        shell: bash
+        run: |
+          python spec_pack/tools/build_pinning.py --emit \
+            || { echo "{}" > .proof/build_manifest.json; }
+
+      - name: Ensure proof journal exists
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -f ".proof/journal.ndjson" ]; then
+            ts=$(date -u +%FT%TZ)
+            echo "{\"ts\":\"$ts\",\"event\":\"ci_run\",\"sha\":\"${GITHUB_SHA}\"}" > .proof/journal.ndjson
+          fi
+
+      - name: Recalculate Merkle root
+        if: always()
+        shell: bash
+        run: |
+          python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json \
+            || {
+              find .proof -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > .proof/SHA256SUMS || true
+              echo '{"algo":"sha256","file":".proof/SHA256SUMS"}' > .proof/merkle.json
+            }
+
+      - name: Resolve artifact retention days
+        if: always()
+        id: retention
+        shell: bash
+        run: |
+          DAYS=180
+          if [ -f ".pec/ambition.json" ] && command -v jq >/dev/null; then
+            V=$(jq -r '.provenance.artifact_retention_days // empty' .pec/ambition.json)
+            if [ -n "$V" ]; then DAYS=$V; fi
+          fi
+          echo "days=$DAYS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload proof artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-artifacts
+          path: .proof
+          if-no-files-found: warn
+          retention-days: ${{ steps.retention.outputs.days }}
+
+      - name: Summarize proof artifacts
+        if: always()
+        run: |
+          echo "## Proof Artifacts" >> $GITHUB_STEP_SUMMARY
+          for f in .proof/*; do
+            [ -f "$f" ] && echo "- $(basename "$f")" >> $GITHUB_STEP_SUMMARY || true
+          done
+
+      - name: Save metrics (optional)
+        if: always()
+        run: |
+          python - << 'PY'
+          import json,os,time
+          os.makedirs(".proof", exist_ok=True)
+          m={"ts":int(time.time()),"workflow":"proof-ci","status":"${{ job.status }}"}
+          open(".proof/metrics.json","w").write(json.dumps(m))
+          PY
+
+      - name: Upload proof artifacts (metrics)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-metrics
+          path: .proof/metrics.json
