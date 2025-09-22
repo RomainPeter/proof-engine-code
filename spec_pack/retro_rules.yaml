@@ -1,0 +1,14 @@
+
+retro_rules:
+  - id: RR-0001
+    created_at: "2025-09-20T16:42:43.702782+00:00"
+    trigger: "attribute_conflict: provenance vs deny_provenance"
+    statement: >
+      If conflicting policy detected on provenance, quarantine affected
+      evidence and mark dependent decisions as contested; enforce deny-with-proof
+      for requests requiring provenance until resolution.
+    action:
+      - quarantine: "provenance"
+      - mark_decisions: "contested"
+      - policy: "deny_with_proof"
+    verifier: "v_provenance"

@@ -1,0 +1,36 @@
+name: Proof Delta
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  proof_delta:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --require-hashes -r spec_pack/requirements.lock.txt
+
+      - name: Run Proof Engine
+        uses: ./
+
+      - name: Generate Proof Delta
+        run: |
+          python spec_pack/tools/proof_delta.py > proof_delta.md || echo "Proof Delta generation failed" > proof_delta.md
+
+      - name: Post Proof Delta Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: proof_delta.md
