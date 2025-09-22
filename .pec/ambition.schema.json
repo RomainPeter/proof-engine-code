@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/pec/ambition.schema.json",
+  "title": "Ambition v0",
+  "type": "object",
+  "required": [
+    "identity",
+    "owners",
+    "api_stability",
+    "changelog",
+    "versioning",
+    "tests",
+    "security",
+    "reproducibility",
+    "provenance",
+    "custom_obligations"
+  ],
+  "properties": {
+    "identity": { "type": "string", "minLength": 1 },
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "compliance_targets": {
+      "type": "array",
+      "items": { "enum": ["NIST-SSDF", "SOC2", "EU-AI-Act"] },
+      "default": []
+    },
+    "api_stability": {
+      "type": "object",
+      "required": ["policy", "surface_paths", "require_deprecation_cycle"],
+      "properties": {
+        "policy": { "enum": ["semver", "frozen", "internal"] },
+        "surface_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "require_deprecation_cycle": { "type": "boolean" }
+      }
+    },
+    "changelog": {
+      "type": "object",
+      "required": ["path", "required_for"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "required_for": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["minor", "major", "breaking"] }
+        }
+      }
+    },
+    "versioning": {
+      "type": "object",
+      "required": ["file", "bump_rules"],
+      "properties": {
+        "file": { "enum": ["pyproject.toml", "package.json", "custom"] },
+        "bump_rules": { "enum": ["auto", "manual"] }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "required": ["min_coverage", "required_suites"],
+      "properties": {
+        "min_coverage": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "required_suites": {
+          "type": "array",
+          "items": { "enum": ["unit", "integration"] },
+          "default": []
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "required": ["osv_gate", "sast_paths"],
+      "properties": {
+        "osv_gate": { "enum": ["none", "low", "moderate", "high", "critical"] },
+        "sast_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": []
+        }
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "required": ["lockfiles_required", "pinned_python"],
+      "properties": {
+        "lockfiles_required": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": []
+        },
+        "pinned_python": { "type": ["string", "null"] }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["sign_proof_journal", "artifact_retention_days"],
+      "properties": {
+        "sign_proof_journal": { "type": "boolean" },
+        "artifact_retention_days": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "custom_obligations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "on_paths": {
+            "type": ["array", "null"],
+            "items": { "type": "string" }
+          },
+          "severity": { "type": ["string", "null"] }
+        }
+      },
+      "default": []
+    }
+  }
+}
