@@ -25,10 +25,12 @@ jobs:
         run: |
           python -m pip install --require-hashes -r spec_pack/requirements.lock.txt
 
-      - name: Install PEC CLI
+      - name: Install PEC CLI (no-deps)
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install --no-deps -e .
+          # Optionnel: si des outils tiers pin jsonschema~=4.20, réaligner
+          pip install "jsonschema>=4.20,<5"
 
       - name: Compile Ambition (if present)
         id: compile_ambition

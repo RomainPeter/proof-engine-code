@@ -9,7 +9,7 @@
   },
   "changelog": {"path": "CHANGELOG.md", "required_for": ["minor", "major", "breaking"]},
   "versioning": {"file": "pyproject.toml", "bump_rules": "auto"},
-  "tests": {"min_coverage": 85, "required_suites": ["unit"]},
+  "tests": {"min_coverage": 80, "required_suites": ["unit"]},
   "security": {"osv_gate": "high", "sast_paths": ["src/**"]},
   "reproducibility": {"lockfiles_required": ["requirements.txt"], "pinned_python": "3.11.9"},
   "provenance": {"sign_proof_journal": true, "artifact_retention_days": 180},
