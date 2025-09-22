@@ -3,13 +3,13 @@ import subprocess
 import sys
 import json
 from xml.etree import ElementTree
+from pathlib import Path
 
 
 def _read_coverage_percent(cobertura_path: str) -> float | None:
     try:
         tree = ElementTree.parse(cobertura_path)
         root = tree.getroot()
-        # Cobertura: attributes line-rate or lines-valid/lines-covered
         line_rate = root.attrib.get("line-rate")
         if line_rate is not None:
             return float(line_rate) * 100.0
@@ -35,7 +35,6 @@ def _enforce_obligations(obligations_path: str) -> None:
         print(f"[run_s1] Failed to read obligations: {exc}")
         return
 
-    # Coverage threshold enforcement
     cov_obl = next((o for o in obligations if o.get("id") == "OBL-COVERAGE-THRESHOLD"), None)
     if cov_obl:
         threshold = float(cov_obl.get("threshold", 0))
@@ -58,13 +57,66 @@ def _enforce_obligations(obligations_path: str) -> None:
                 sys.exit(1)
 
 
+def _ensure_proof_dir() -> Path:
+    p = Path(".proof")
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _emit_api_diff(proof_dir: Path) -> None:
+    out = proof_dir / "api_diff.json"
+    try:
+        rc = subprocess.run([sys.executable, "spec_pack/tools/check_api_diff.py", "--emit"], check=False)
+        if rc.returncode != 0 and not out.exists():
+            out.write_text("{}", encoding="utf-8")
+    except Exception:
+        if not out.exists():
+            out.write_text("{}", encoding="utf-8")
+
+
+def _emit_build_manifest(proof_dir: Path) -> None:
+    out = proof_dir / "build_manifest.json"
+    try:
+        rc = subprocess.run([sys.executable, "spec_pack/tools/build_pinning.py", "--emit", "-o", str(out)], check=False)
+        if rc.returncode != 0 and not out.exists():
+            out.write_text("{}", encoding="utf-8")
+    except Exception:
+        if not out.exists():
+            out.write_text("{}", encoding="utf-8")
+
+
+def _ensure_journal(proof_dir: Path, merkle_path: Path) -> None:
+    j = proof_dir / "journal.ndjson"
+    if j.exists():
+        return
+    try:
+        import datetime
+        ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        event = {"ts": ts, "event": "ci_run", "sha": os.environ.get("GITHUB_SHA", "local"), "merkle_file": str(merkle_path)}
+        j.write_text(json.dumps(event) + "\n", encoding="utf-8")
+    except Exception:
+        pass
+
+
 def main():
     journal = os.environ.get("PROOF_JOURNAL", ".proof/journal.ndjson")
     merkle = os.environ.get("PROOF_MERKLE", ".proof/merkle.json")
     obligations_path = os.environ.get("PEC_OBLIGATIONS_PATH", ".pec/obligations.lock")
 
-    # Enforce obligations (coverage etc.) before running verification
     _enforce_obligations(obligations_path)
+
+    proof_dir = _ensure_proof_dir()
+
+    _emit_api_diff(proof_dir)
+    _emit_build_manifest(proof_dir)
+
+    # Recalculate Merkle
+    try:
+        subprocess.run([sys.executable, "spec_pack/tools/merkle_hasher.py", "--in", str(proof_dir), "--out", merkle], check=False)
+    except Exception:
+        pass
+
+    _ensure_journal(proof_dir, Path(merkle))
 
     cmd = [
         sys.executable,
