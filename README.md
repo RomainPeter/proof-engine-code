@@ -189,4 +189,4 @@ Built for the **OpenAI Grove** incubator program, demonstrating advanced code qu
 
 ---
 
-**Ready to prove your code?** 🚀 Start with the [Quickstart](#-quickstart) guide above!
+**Ready to prove your code?** 🚀 Start with the [Quickstart](#-quickstart) guide above!\n
