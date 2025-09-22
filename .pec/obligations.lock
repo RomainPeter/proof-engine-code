@@ -1,0 +1,56 @@
+[
+  {
+    "id": "OBL-API-BREAK",
+    "severity": "error",
+    "when": "breaking_api_change",
+    "action": "require_major_bump"
+  },
+  {
+    "id": "OBL-CHANGELOG",
+    "severity": "error",
+    "when": "public_change",
+    "action": "require_changelog_entry",
+    "path": "CHANGELOG.md"
+  },
+  {
+    "id": "OBL-DEPRECATION",
+    "severity": "warning",
+    "when": "public_change",
+    "action": "require_deprecation_cycle"
+  },
+  {
+    "id": "OBL-COVERAGE-THRESHOLD",
+    "severity": "error",
+    "threshold": 80,
+    "suites": [
+      "unit"
+    ]
+  },
+  {
+    "id": "OBL-OSV-GATE",
+    "severity": "error",
+    "threshold": "high",
+    "scope": "modified_paths",
+    "paths": [
+      "src/**"
+    ]
+  },
+  {
+    "id": "OBL-LOCKFILES-PRESENT",
+    "severity": "error",
+    "files": [
+      "requirements.txt"
+    ]
+  },
+  {
+    "id": "OBL-HASHED-BUILD",
+    "severity": "warning",
+    "action": "hash_build_inputs"
+  },
+  {
+    "id": "OBL-PROOF-SIGN",
+    "severity": "error",
+    "action": "sign_proof_journal",
+    "retention_days": 180
+  }
+]

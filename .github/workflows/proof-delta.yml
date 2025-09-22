@@ -3,229 +3,34 @@ name: Proof Delta
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
-  proof-delta:
+  proof_delta:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-    
+    permissions:
+      pull-requests: write
+      contents: read
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r spec_pack/requirements.lock.txt
-      
-      - name: Run Proof Analysis
-        id: proof-analysis
+          python -m pip install --require-hashes -r spec_pack/requirements.lock.txt
+
+      - name: Run Proof Engine
+        uses: ./
+
+      - name: Generate Proof Delta
         run: |
-          # Create proof artifacts directory
-          mkdir -p .proof
-          
-          # Run S1 verification
-          echo "Running S1 verification..."
-          python -m pytest examples/pilot-python/tests --cov=examples/pilot-python/src --cov-report=xml:.proof/coverage.xml --junitxml=.proof/test-report.xml || echo "Tests completed with issues"
-          
-          # Run type checking
-          echo "Running type checking..."
-          dmypy run -- examples/pilot-python/src --ignore-missing-imports --allow-redefinition || echo "Type checking completed with issues"
-          
-          # Run linting
-          echo "Running linting..."
-          ruff check examples/pilot-python/src --output-file .proof/ruff.json --exit-zero || echo "Linting completed with issues"
-          
-          # Run security scan
-          echo "Running security scan..."
-          semgrep --config p/ci --error --json -o .proof/sast.json examples/pilot-python/src || echo "Security scan completed with issues"
-          
-          # Generate SBOM
-          echo "Generating SBOM..."
-          python -m cyclonedx_py requirements spec_pack/requirements.lock.txt --output-file .proof/sbom.json || echo "SBOM generation completed with issues"
-          
-          # Run FCA analysis
-          echo "Running FCA analysis..."
-          python spec_pack/tools/fca_nextclosure.py --emit --output .proof/fca_analysis.json || echo "FCA analysis completed with issues"
-          
-          # Run API diff analysis
-          echo "Running API diff analysis..."
-          python spec_pack/tools/robust_api_diff.py --emit --output .proof/api_diff.json || echo "API diff analysis completed with issues"
-          
-          # Run build pinning
-          echo "Running build pinning..."
-          python spec_pack/tools/build_pinning.py --emit --output .proof/build_manifest.json || echo "Build pinning completed with issues"
-          
-          # Generate Merkle hash
-          echo "Generating Merkle hash..."
-          python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json || echo "Merkle hash generation completed with issues"
-      
-      - name: Upload Proof Artifacts
-        uses: actions/upload-artifact@v4
+          python spec_pack/tools/proof_delta.py > proof_delta.md || echo "Proof Delta generation failed" > proof_delta.md
+
+      - name: Post Proof Delta Comment
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          name: proof-artifacts-${{ github.event.pull_request.number }}
-          path: .proof/
-          retention-days: 30
-      
-      - name: Generate Proof Delta Report
-        id: generate-report
-        run: |
-          # Create proof delta report
-          cat > .proof/proof_delta_report.md << 'EOF'
-          # Proof Delta Report
-          
-          ## 📊 Verification Summary
-          
-          | Component | Status | Details |
-          |-----------|--------|---------|
-          | Tests | ✅ | Coverage report generated |
-          | Type Checking | ✅ | dmypy analysis completed |
-          | Linting | ✅ | Ruff analysis completed |
-          | Security | ✅ | Semgrep scan completed |
-          | SBOM | ✅ | Software bill of materials generated |
-          | FCA Analysis | ✅ | Formal concept analysis completed |
-          | API Diff | ✅ | API surface analysis completed |
-          | Build Pinning | ✅ | Dependency pinning completed |
-          | Merkle Hash | ✅ | Proof integrity verified |
-          
-          ## 🔗 Artifact Links
-          
-          - **Coverage Report**: [coverage.xml](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **Test Results**: [test-report.xml](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **Linting Results**: [ruff.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **Security Scan**: [sast.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **SBOM**: [sbom.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **FCA Analysis**: [fca_analysis.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **API Diff**: [api_diff.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **Build Manifest**: [build_manifest.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          - **Merkle Hash**: [merkle.json](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
-          
-          ## 📈 Metrics
-          
-          - **Build Timestamp**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          - **Python Version**: $(python --version)
-          - **Platform**: $(uname -s)-$(uname -m)
-          - **Commit**: ${{ github.sha }}
-          - **Branch**: ${{ github.head_ref }}
-          
-          ## 🛡️ Security Status
-          
-          All security checks have been completed. Review the security scan results in the artifacts.
-          
-          ## 🔍 Analysis Details
-          
-          ### Formal Concept Analysis (FCA)
-          The FCA analysis provides formal verification of code changes using concept lattice theory.
-          
-          ### API Surface Detection
-          Robust API diff analysis tracks changes to public interfaces and signatures.
-          
-          ### Build Reproducibility
-          All dependencies are pinned with cryptographic digests for reproducible builds.
-          
-          ---
-          
-          *This report was automatically generated by the Proof Delta workflow.*
-          EOF
-          
-          # Output report content for PR comment
-          echo "report_content<<EOF" >> $GITHUB_OUTPUT
-          cat .proof/proof_delta_report.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      
-      - name: Comment PR with Proof Delta Report
-        uses: actions/github-script@v7
-        continue-on-error: true
-        with:
-          script: |
-            const fs = require('fs');
-            const reportPath = '.proof/proof_delta_report.md';
-            
-            let reportContent = '';
-            if (fs.existsSync(reportPath)) {
-              reportContent = fs.readFileSync(reportPath, 'utf8');
-            } else {
-              reportContent = '## Proof Delta Report\n\n⚠️ Report generation failed.';
-            }
-            
-            try {
-              // Check if this is a fork PR (limited permissions)
-              const isFork = context.payload.pull_request.head.repo.full_name !== context.payload.pull_request.base.repo.full_name;
-              
-              if (isFork) {
-                console.log('⚠️ PR is from a fork. GitHub restricts token permissions for security.');
-                console.log('📋 Proof Delta Report generated but cannot comment automatically.');
-                console.log('📄 Report content:');
-                console.log(reportContent);
-                return;
-              }
-              
-              // Find existing comment
-              const comments = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-              });
-              
-              const botComment = comments.data.find(comment => 
-                comment.user.type === 'Bot' && 
-                comment.body.includes('Proof Delta Report')
-              );
-              
-              if (botComment) {
-                // Update existing comment
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: botComment.id,
-                  body: reportContent
-                });
-                console.log('✅ Updated existing Proof Delta comment');
-              } else {
-                // Create new comment
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  body: reportContent
-                });
-                console.log('✅ Created new Proof Delta comment');
-              }
-            } catch (error) {
-              console.log('⚠️ Failed to comment on PR:', error.message);
-              console.log('📋 This may be due to insufficient permissions or fork restrictions.');
-              console.log('📄 Report content:');
-              console.log(reportContent);
-              // Don't fail the workflow, just log the issue
-            }
-      
-      - name: Set PR Status
-        uses: actions/github-script@v7
-        continue-on-error: true
-        with:
-          script: |
-            // Set PR status based on proof analysis results
-            const status = 'success'; // You can make this dynamic based on actual results
-            
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.payload.pull_request.head.sha,
-              state: status,
-              target_url: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-              description: 'Proof Delta analysis completed',
-              context: 'proof-delta'
-            });
+          path: proof_delta.md
