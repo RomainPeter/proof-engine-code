@@ -62,23 +62,33 @@ jobs:
         env:
           PEC_OBLIGATIONS_PATH: .pec/obligations.lock
 
+      - name: Install jq (for retention resolution)
+        if: always()
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
       - name: Ensure .proof dir
+        if: always()
         shell: bash
         run: mkdir -p .proof
 
       - name: Emit API diff
+        if: always()
         shell: bash
         run: |
           python spec_pack/tools/check_api_diff.py --emit \
             || { echo "{}" > .proof/api_diff.json; }
 
       - name: Emit build manifest (reproducibility)
+        if: always()
         shell: bash
         run: |
           python spec_pack/tools/build_pinning.py --emit \
             || { echo "{}" > .proof/build_manifest.json; }
 
       - name: Ensure proof journal exists
+        if: always()
         shell: bash
         run: |
           if [ ! -f ".proof/journal.ndjson" ]; then
@@ -87,15 +97,17 @@ jobs:
           fi
 
       - name: Recalculate Merkle root
+        if: always()
         shell: bash
         run: |
           python spec_pack/tools/merkle_hasher.py --in .proof --out .proof/merkle.json \
             || {
-              find .proof -maxdepth 1 -type f -print0 | sort -z | xargs -0 shasum -a 256 > .proof/SHA256SUMS || true
+              find .proof -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > .proof/SHA256SUMS || true
               echo '{"algo":"sha256","file":".proof/SHA256SUMS"}' > .proof/merkle.json
             }
 
       - name: Resolve artifact retention days
+        if: always()
         id: retention
         shell: bash
         run: |
@@ -107,6 +119,7 @@ jobs:
           echo "days=$DAYS" >> "$GITHUB_OUTPUT"
 
       - name: Upload proof artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: proof-artifacts
@@ -115,6 +128,7 @@ jobs:
           retention-days: ${{ steps.retention.outputs.days }}
 
       - name: Summarize proof artifacts
+        if: always()
         run: |
           echo "## Proof Artifacts" >> $GITHUB_STEP_SUMMARY
           for f in .proof/*; do
@@ -132,8 +146,8 @@ jobs:
           PY
 
       - name: Upload proof artifacts (metrics)
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: proof-metrics
           path: .proof/metrics.json
